@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberShield — Information Security Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0e;
+    --bg2: #0a1520;
+    --bg3: #0d1f2d;
+    --green: #00ff88;
+    --cyan: #00e5ff;
+    --red: #ff3b5c;
+    --yellow: #ffd60a;
+    --orange: #ff6b35;
+    --text: #c8d8e8;
+    --muted: #4a6a8a;
+    --border: #1a3a5a;
+    --glow-green: 0 0 20px rgba(0,255,136,0.4);
+    --glow-red: 0 0 20px rgba(255,59,92,0.4);
+    --glow-cyan: 0 0 20px rgba(0,229,255,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ═══ HEADER ═══ */
+  header {
+    background: linear-gradient(180deg, #020810 0%, var(--bg2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--green), var(--cyan));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    animation: pulse-logo 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,255,136,0.5); }
+    50% { box-shadow: 0 0 35px rgba(0,255,136,0.9); }
+  }
+
+  .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--green), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+
+  .logo-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    margin-top: -2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--green);
+    letter-spacing: 2px;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1s ease-in-out infinite;
+    box-shadow: var(--glow-green);
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  #clock {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--cyan);
+    letter-spacing: 2px;
+  }
+
+  /* ═══ ALERT BAR ═══ */
+  .alert-bar {
+    background: linear-gradient(90deg, rgba(255,59,92,0.15), rgba(255,59,92,0.05), rgba(255,59,92,0.15));
+    border-top: 1px solid rgba(255,59,92,0.3);
+    border-bottom: 1px solid rgba(255,59,92,0.3);
+    padding: 8px 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    overflow: hidden;
+  }
+
+  .alert-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 3px;
+    white-space: nowrap;
+    padding: 3px 10px;
+    border: 1px solid var(--red);
+    border-radius: 2px;
+  }
+
+  .alert-scroll {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(255,59,92,0.8);
+    white-space: nowrap;
+    animation: scroll-left 30s linear infinite;
+  }
+
+  @keyframes scroll-left {
+    from { transform: translateX(100vw); }
+    to { transform: translateX(-100%); }
+  }
+
+  /* ═══ MAIN LAYOUT ═══ */
+  main {
+    padding: 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 1.2rem;
+  }
+
+  /* ═══ CARDS ═══ */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card.green::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .card.red::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+  .card.cyan::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .card.yellow::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+  .card.orange::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); }
+
+  .card:hover {
+    border-color: var(--cyan);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .card-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  .badge-green { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+  .badge-red { background: rgba(255,59,92,0.1); color: var(--red); border: 1px solid rgba(255,59,92,0.3); }
+  .badge-yellow { background: rgba(255,214,10,0.1); color: var(--yellow); border: 1px solid rgba(255,214,10,0.3); }
+  .badge-cyan { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.3); }
+
+  /* ═══ STAT CARDS ═══ */
+  .stats-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.2rem;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .stat-card:hover { transform: translateY(-3px); }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .stat-card.sc-green::after { background: var(--green); box-shadow: var(--glow-green); }
+  .stat-card.sc-red::after { background: var(--red); box-shadow: var(--glow-red); }
+  .stat-card.sc-cyan::after { background: var(--cyan); }
+  .stat-card.sc-yellow::after { background: var(--yellow); }
+  .stat-card.sc-orange::after { background: var(--orange); }
+
+  .stat-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .stat-change {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    margin-top: 0.4rem;
+  }
+
+  /* ═══ THREAT MAP ═══ */
+  .threat-map-card {
+    grid-column: 1 / 3;
+  }
+
+  .world-map {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 220px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .map-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(26,58,90,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,58,90,0.3) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .map-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    z-index: 2;
+  }
+
+  .attack-dot {
+    position: absolute;
+    border-radius: 50%;
+    animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+    z-index: 3;
+  }
+
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 1; }
+    75%, 100% { transform: scale(3); opacity: 0; }
+  }
+
+  .connection-line {
+    position: absolute;
+    background: linear-gradient(90deg, rgba(255,59,92,0.8), transparent);
+    height: 1px;
+    transform-origin: left center;
+    animation: flash-line 3s ease-in-out infinite;
+    z-index: 2;
+  }
+
+  @keyframes flash-line {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.6; }
+  }
+
+  /* ═══ ACTIVITY LOG ═══ */
+  .log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .log-list::-webkit-scrollbar { width: 4px; }
+  .log-list::-webkit-scrollbar-track { background: var(--bg); }
+  .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg3);
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    transition: background 0.2s;
+    animation: slide-in 0.3s ease;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .log-item.critical { border-left-color: var(--red); }
+  .log-item.warning { border-left-color: var(--yellow); }
+  .log-item.info { border-left-color: var(--cyan); }
+  .log-item.success { border-left-color: var(--green); }
+
+  .log-time { color: var(--muted); min-width: 55px; }
+  .log-msg { color: var(--text); flex: 1; }
+  .log-src { color: var(--muted); font-size: 0.65rem; }
+
+  /* ═══ VULNERABILITY METER ═══ */
+  .vuln-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .vuln-item { }
+  .vuln-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .vuln-bar-bg {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .vuln-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .vuln-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px; height: 100%;
+    background: white;
+    opacity: 0.6;
+    border-radius: 2px;
+  }
+
+  /* ═══ PASSWORD STRENGTH TOOL ═══ */
+  .tool-section {
+    grid-column: 1 / 3;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .cyber-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.7rem 1rem;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.3s;
+    letter-spacing: 2px;
+  }
+
+  .cyber-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,229,255,0.1); }
+  .cyber-input::placeholder { color: var(--muted); letter-spacing: 1px; }
+
+  .cyber-btn {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 0.7rem 1.4rem;
+    border-radius: 3px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .cyber-btn:hover {
+    background: rgba(0,255,136,0.1);
+    box-shadow: var(--glow-green);
+  }
+
+  .strength-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.8rem;
+  }
+
+  .strength-bars {
+    display: flex;
+    gap: 4px;
+  }
+
+  .s-bar {
+    width: 30px; height: 8px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .s-bar.active-weak { background: var(--red); }
+  .s-bar.active-fair { background: var(--yellow); }
+  .s-bar.active-good { background: var(--cyan); }
+  .s-bar.active-strong { background: var(--green); box-shadow: var(--glow-green); }
+
+  .strength-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .pwd-tips {
+    margin-top: 0.8rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .tip-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    transition: color 0.3s;
+  }
+
+  .tip-item.pass { color: var(--green); }
+  .tip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* ═══ ENCRYPTION TOOL ═══ */
+  .enc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+
+  .enc-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.7rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    min-height: 80px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.3s;
+    width: 100%;
+    display: block;
+  }
+
+  .enc-box:focus { border-color: var(--cyan); }
+
+  .enc-controls {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .enc-method {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+
+  .method-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.4rem 0.8rem;
+    border-radius: 3px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .method-btn.active {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,229,255,0.05);
+  }
+
+  /* ═══ NETWORK MONITOR ═══ */
+  .net-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .net-stat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+
+  .net-stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+
+  .net-stat-lbl {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 0.2rem;
+  }
+
+  .mini-chart {
+    height: 60px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .mini-chart svg {
+    width: 100%; height: 100%;
+  }
+
+  /* ═══ SECURITY CHECKLIST ═══ */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg3);
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .check-item:hover { border-color: var(--cyan); }
+
+  .check-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 12px;
+  }
+
+  .check-item.done .check-box {
+    border-color: var(--green);
+    background: rgba(0,255,136,0.1);
+    color: var(--green);
+    box-shadow: var(--glow-green);
+  }
+
+  .check-item.done .check-label { color: var(--muted); text-decoration: line-through; }
+
+  .check-priority {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-left: auto;
+  }
+
+  /* ═══ FOOTER ═══ */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+
+  .footer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: var(--glow-green);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .threat-map-card, .tool-section { grid-column: 1; }
+    .enc-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div>
+      <div class="logo-text">CYBERSHIELD</div>
+      <div class="logo-sub">INFORMATION SECURITY OPERATIONS CENTER</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE MONITORING
+    </div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- ═══ ALERT BAR ═══ -->
+<div class="alert-bar">
+  <div class="alert-label">⚠ ALERT</div>
+  <div class="alert-scroll">
+    [CRITICAL] Brute Force Attack detected from 185.234.xx.xx — Port 22 SSH &nbsp;&nbsp;&nbsp; 
+    [WARNING] Suspicious DNS queries from internal host 192.168.1.45 &nbsp;&nbsp;&nbsp; 
+    [INFO] Firewall rule updated — Policy v2.3 deployed successfully &nbsp;&nbsp;&nbsp; 
+    [CRITICAL] SQL Injection attempt on /api/login endpoint — Blocked &nbsp;&nbsp;&nbsp; 
+    [WARNING] Unauthorized access attempt — User "admin" from unknown IP &nbsp;&nbsp;&nbsp;
+    [INFO] SSL Certificate renewal — domain.com expires in 14 days &nbsp;&nbsp;&nbsp;
+    [CRITICAL] DDoS traffic spike detected — 2.3M requests/sec mitigated
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<main>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card sc-red">
+      <span class="stat-icon">⚡</span>
+      <div class="stat-value" style="color:var(--red)" id="stat-threats">0</div>
+      <div class="stat-label">Active Threats</div>
+      <div class="stat-change" style="color:var(--red)">↑ +3 in last hour</div>
+    </div>
+    <div class="stat-card sc-green">
+      <span class="stat-icon">🛡</span>
+      <div class="stat-value" style="color:var(--green)" id="stat-blocked">0</div>
+      <div class="stat-label">Attacks Blocked</div>
+      <div class="stat-change" style="color:var(--green)">↑ 99.8% success</div>
+    </div>
+    <div class="stat-card sc-cyan">
+      <span class="stat-icon">🌐</span>
+      <div class="stat-value" style="color:var(--cyan)" id="stat-nodes">0</div>
+      <div class="stat-label">Nodes Monitored</div>
+      <div class="stat-change" style="color:var(--cyan)">All systems normal</div>
+    </div>
+    <div class="stat-card sc-yellow">
+      <span class="stat-icon">🔍</span>
+      <div class="stat-value" style="color:var(--yellow)" id="stat-vulns">0</div>
+      <div class="stat-label">Vulnerabilities</div>
+      <div class="stat-change" style="color:var(--yellow)">↓ 2 patched today</div>
+    </div>
+    <div class="stat-card sc-orange">
+      <span class="stat-icon">👥</span>
+      <div class="stat-value" style="color:var(--orange)" id="stat-users">0</div>
+      <div class="stat-label">Active Sessions</div>
+      <div class="stat-change" style="color:var(--orange)">1 suspicious flagged</div>
+    </div>
+  </div>
+
+  <!-- THREAT MAP -->
+  <div class="card cyan threat-map-card">
+    <div class="card-header">
+      <div class="card-title">🌍 Global Threat Map</div>
+      <div class="card-badge badge-red">LIVE FEED</div>
+    </div>
+    <div class="world-map" id="threatMap">
+      <div class="map-grid"></div>
+      <div class="map-label">[ THREAT ORIGIN TRACKING ACTIVE ]</div>
+    </div>
+    <div style="display:flex;gap:1rem;margin-top:0.8rem;flex-wrap:wrap;">
+      <span style="font-size:0.75rem;color:var(--muted);font-family:'Share Tech Mono',monospace">
+        <span style="color:var(--red)">● </span>CRITICAL &nbsp;
+        <span style="color:var(--yellow)">● </span>WARNING &nbsp;
+        <span style="color:var(--cyan)">● </span>SCAN &nbsp;
+        <span style="color:var(--green)">● </span>SAFE
+      </span>
+    </div>
+  </div>
+
+  <!-- NETWORK MONITOR -->
+  <div class="card green">
+    <div class="card-header">
+      <div class="card-title">📡 Network Monitor</div>
+      <div class="card-badge badge-green">ONLINE</div>
+    </div>
+    <div class="net-stats">
+      <div class="net-stat">
+        <div class="net-stat-val" id="bandwidth">0.0</div>
+        <div class="net-stat-lbl">BANDWIDTH (Gbps)</div>
+      </div>
+      <div class="net-stat">
+        <div class="net-stat-val" id="packets">0</div>
+        <div class="net-stat-lbl">PACKETS/SEC</div>
+      </div>
+      <div class="net-stat">
+        <div class="net-stat-val" id="latency">0ms</div>
+        <div class="net-stat-lbl">AVG LATENCY</div>
+      </div>
+      <div class="net-stat">
+        <div class="net-stat-val" id="uptime">99.9%</div>
+        <div class="net-stat-lbl">UPTIME</div>
+      </div>
+    </div>
+    <div class="mini-chart">
+      <svg id="networkChart" viewBox="0 0 300 60" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(0,255,136,0.4)"/>
+            <stop offset="100%" stop-color="rgba(0,255,136,0)"/>
+          </linearGradient>
+        </defs>
+        <path id="netPath" d="" fill="url(#netGrad)" stroke="rgba(0,255,136,0.8)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- PASSWORD STRENGTH -->
+  <div class="card yellow tool-section">
+    <div class="card-header">
+      <div class="card-title">🔑 Password Strength Analyzer</div>
+      <div class="card-badge badge-yellow">TOOL</div>
+    </div>
+    <div class="input-group">
+      <input class="cyber-input" type="password" id="pwdInput" placeholder="Enter password to analyze...">
+      <button class="cyber-btn" onclick="togglePwd()">SHOW</button>
+    </div>
+    <div class="strength-display">
+      <div class="strength-bars" id="strengthBars">
+        <div class="s-bar" id="sb1"></div>
+        <div class="s-bar" id="sb2"></div>
+        <div class="s-bar" id="sb3"></div>
+        <div class="s-bar" id="sb4"></div>
+        <div class="s-bar" id="sb5"></div>
+      </div>
+      <div class="strength-text" id="strengthText" style="color:var(--muted)">ENTER PASSWORD</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--muted);margin-left:auto" id="timeText"></div>
+    </div>
+    <div class="pwd-tips">
+      <div class="tip-item" id="tip-len"><div class="tip-dot"></div> Min 12 characters</div>
+      <div class="tip-item" id="tip-upper"><div class="tip-dot"></div> Uppercase letters</div>
+      <div class="tip-item" id="tip-lower"><div class="tip-dot"></div> Lowercase letters</div>
+      <div class="tip-item" id="tip-num"><div class="tip-dot"></div> Numbers included</div>
+      <div class="tip-item" id="tip-sym"><div class="tip-dot"></div> Special symbols</div>
+      <div class="tip-item" id="tip-common"><div class="tip-dot"></div> Not a common word</div>
+    </div>
+  </div>
+
+  <!-- SECURITY CHECKLIST -->
+  <div class="card orange">
+    <div class="card-header">
+      <div class="card-title">✅ Security Checklist</div>
+      <div class="card-badge badge-yellow" id="checkScore">0/7 DONE</div>
+    </div>
+    <div class="checklist" id="checklist">
+      <!-- Items generated by JS -->
+    </div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="card red">
+    <div class="card-header">
+      <div class="card-title">📋 Live Activity Log</div>
+      <div class="card-badge badge-red">LIVE</div>
+    </div>
+    <div class="log-list" id="logList"></div>
+  </div>
+
+  <!-- VULNERABILITY SCANNER -->
+  <div class="card red">
+    <div class="card-header">
+      <div class="card-title">🔍 Vulnerability Status</div>
+      <div class="card-badge badge-red">7 FOUND</div>
+    </div>
+    <div class="vuln-list">
+      <div class="vuln-item">
+        <div class="vuln-top"><span>SQL Injection</span><span style="color:var(--red)">CRITICAL — 3 affected</span></div>
+        <div class="vuln-bar-bg"><div class="vuln-bar-fill" style="width:85%;background:linear-gradient(90deg,var(--red),#ff6b35)"></div></div>
+      </div>
+      <div class="vuln-item">
+        <div class="vuln-top"><span>XSS (Cross-Site Scripting)</span><span style="color:var(--orange)">HIGH — 5 endpoints</span></div>
+        <div class="vuln-bar-bg"><div class="vuln-bar-fill" style="width:65%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div>
+      </div>
+      <div class="vuln-item">
+        <div class="vuln-top"><span>Outdated TLS Protocol</span><span style="color:var(--yellow)">MEDIUM — TLS 1.0</span></div>
+        <div class="vuln-bar-bg"><div class="vuln-bar-fill" style="width:45%;background:linear-gradient(90deg,var(--yellow),#a8ff78)"></div></div>
+      </div>
+      <div class="vuln-item">
+        <div class="vuln-top"><span>Open Ports (21, 23, 25)</span><span style="color:var(--yellow)">MEDIUM — Exposed</span></div>
+        <div class="vuln-bar-bg"><div class="vuln-bar-fill" style="width:40%;background:linear-gradient(90deg,var(--yellow),var(--cyan))"></div></div>
+      </div>
+      <div class="vuln-item">
+        <div class="vuln-top"><span>Weak Password Policy</span><span style="color:var(--cyan)">LOW — 12 users</span></div>
+        <div class="vuln-bar-bg"><div class="vuln-bar-fill" style="width:20%;background:linear-gradient(90deg,var(--cyan),var(--green))"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BASE64/ROT13 ENCODER -->
+  <div class="card cyan">
+    <div class="card-header">
+      <div class="card-title">🔐 Encode / Decode Tool</div>
+      <div class="card-badge badge-cyan">UTILITY</div>
+    </div>
+    <div class="enc-grid">
+      <div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;font-family:'Share Tech Mono',monospace">INPUT</div>
+        <textarea class="enc-box" id="encInput" placeholder="Enter text..."></textarea>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;font-family:'Share Tech Mono',monospace">OUTPUT</div>
+        <textarea class="enc-box" id="encOutput" placeholder="Result appears here..." readonly></textarea>
+      </div>
+    </div>
+    <div class="enc-controls">
+      <button class="method-btn active" id="mb-b64">BASE64</button>
+      <button class="method-btn" id="mb-r13">ROT13</button>
+      <button class="method-btn" id="mb-hex">HEX</button>
+      <button class="method-btn" id="mb-bin">BINARY</button>
+      <div style="margin-left:auto;display:flex;gap:0.5rem">
+        <button class="cyber-btn" style="border-color:var(--cyan);color:var(--cyan);font-size:0.65rem;padding:0.4rem 0.8rem" onclick="encodeText()">ENCODE ▶</button>
+        <button class="cyber-btn" style="border-color:var(--muted);color:var(--muted);font-size:0.65rem;padding:0.4rem 0.8rem" onclick="decodeText()">◀ DECODE</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-status">
+    <div class="status-dot"></div>
+    <span>ALL SYSTEMS OPERATIONAL</span>
+    <span>|</span>
+    <span id="footerTime">LOADING...</span>
+  </div>
+  <span>CYBERSHIELD SOC v3.1.4 — INFORMATION SECURITY OPERATIONS CENTER</span>
+  <span>🔒 SECURE CONNECTION — AES-256 ENCRYPTED</span>
+</footer>
+
+<script>
+// ═══ CLOCK ═══
+function updateClock() {
+  const now = new Date();
+  const t = now.toTimeString().split(' ')[0];
+  document.getElementById('clock').textContent = t;
+  document.getElementById('footerTime').textContent = now.toUTCString().replace('GMT','UTC');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══ ANIMATED COUNTERS ═══
+function animCount(id, target, duration=1500) {
+  const el = document.getElementById(id);
+  const step = target / (duration / 16);
+  let cur = 0;
+  const timer = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = Math.round(cur).toLocaleString();
+    if(cur >= target) clearInterval(timer);
+  }, 16);
+}
+setTimeout(() => {
+  animCount('stat-threats', 24);
+  animCount('stat-blocked', 14839);
+  animCount('stat-nodes', 247);
+  animCount('stat-vulns', 7);
+  animCount('stat-users', 83);
+}, 300);
+
+// ═══ NETWORK CHART ═══
+let netData = Array(50).fill(0).map(() => Math.random() * 40 + 10);
+function updateNetChart() {
+  netData.push(Math.random() * 50 + 10);
+  if(netData.length > 50) netData.shift();
+  const w = 300, h = 60, pad = 5;
+  const max = Math.max(...netData);
+  const pts = netData.map((v, i) => {
+    const x = (i / (netData.length-1)) * w;
+    const y = h - pad - ((v/max) * (h-pad*2));
+    return `${x},${y}`;
+  });
+  const d = `M ${pts.join(' L ')} L ${w},${h} L 0,${h} Z`;
+  document.getElementById('netPath').setAttribute('d', d);
+
+  const bw = (Math.random() * 2 + 1).toFixed(1);
+  document.getElementById('bandwidth').textContent = bw;
+  document.getElementById('packets').textContent = Math.floor(Math.random()*5000+8000).toLocaleString();
+  document.getElementById('latency').textContent = Math.floor(Math.random()*10+5) + 'ms';
+}
+setInterval(updateNetChart, 800);
+updateNetChart();
+
+// ═══ THREAT MAP DOTS ═══
+function spawnDot() {
+  const map = document.getElementById('threatMap');
+  const colors = ['var(--red)', 'var(--yellow)', 'var(--cyan)', 'var(--orange)'];
+  const sizes = [6, 8, 5, 10];
+  const dot = document.createElement('div');
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  const size = sizes[Math.floor(Math.random()*sizes.length)];
+  dot.className = 'attack-dot';
+  dot.style.cssText = `
+    width:${size}px;height:${size}px;
+    background:${color};
+    left:${Math.random()*85+5}%;
+    top:${Math.random()*80+5}%;
+    box-shadow:0 0 8px ${color};
+  `;
+  map.appendChild(dot);
+  setTimeout(() => dot.remove(), 2000);
+}
+setInterval(spawnDot, 600);
+
+// ═══ ACTIVITY LOG ═══
+const logEvents = [
+  { type:'critical', msg:'SSH Brute Force — 847 attempts blocked', src:'185.234.xx.xx' },
+  { type:'warning', msg:'Unusual outbound traffic detected', src:'192.168.1.45' },
+  { type:'info', msg:'User login — admin@cybershield.io', src:'10.0.0.1' },
+  { type:'critical', msg:'SQL Injection attempt — /api/users blocked', src:'103.21.xx.xx' },
+  { type:'success', msg:'Firewall rules updated successfully', src:'SYSTEM' },
+  { type:'warning', msg:'Port scan detected — 1024 ports probed', src:'91.108.xx.xx' },
+  { type:'info', msg:'SSL Certificate renewed — 365 days', src:'SYSTEM' },
+  { type:'critical', msg:'Ransomware signature detected & quarantined', src:'FILE: doc.exe' },
+  { type:'success', msg:'Intrusion blocked — DDoS mitigation active', src:'CDN-EDGE' },
+  { type:'warning', msg:'Weak cipher TLS 1.0 connection attempt', src:'72.44.xx.xx' },
+  { type:'info', msg:'Backup completed — 14.2GB encrypted', src:'BACKUP-SRV' },
+  { type:'critical', msg:'XSS payload in form input — sanitized', src:'/contact' },
+];
+
+function addLog() {
+  const list = document.getElementById('logList');
+  const ev = logEvents[Math.floor(Math.random()*logEvents.length)];
+  const now = new Date();
+  const time = now.toTimeString().split(' ')[0];
+  const el = document.createElement('div');
+  el.className = `log-item ${ev.type}`;
+  el.innerHTML = `
+    <span class="log-time">${time}</span>
+    <span class="log-msg">${ev.msg}</span>
+    <span class="log-src">[${ev.src}]</span>
+  `;
+  list.insertBefore(el, list.firstChild);
+  while(list.children.length > 12) list.removeChild(list.lastChild);
+}
+for(let i=0;i<6;i++) addLog();
+setInterval(addLog, 3000);
+
+// ═══ PASSWORD STRENGTH ═══
+const commonWords = ['password','123456','qwerty','admin','letmein','welcome','monkey','dragon'];
+document.getElementById('pwdInput').addEventListener('input', analyzePwd);
+
+function analyzePwd() {
+  const pwd = document.getElementById('pwdInput').value;
+  const bars = ['sb1','sb2','sb3','sb4','sb5'];
+  bars.forEach(b => {
+    const el = document.getElementById(b);
+    el.className = 's-bar';
+  });
+
+  if(!pwd) {
+    document.getElementById('strengthText').textContent = 'ENTER PASSWORD';
+    document.getElementById('strengthText').style.color = 'var(--muted)';
+    document.getElementById('timeText').textContent = '';
+    ['tip-len','tip-upper','tip-lower','tip-num','tip-sym','tip-common'].forEach(t => document.getElementById(t).classList.remove('pass'));
+    return;
+  }
+
+  const checks = {
+    len: pwd.length >= 12,
+    upper: /[A-Z]/.test(pwd),
+    lower: /[a-z]/.test(pwd),
+    num: /[0-9]/.test(pwd),
+    sym: /[^A-Za-z0-9]/.test(pwd),
+    common: !commonWords.some(w => pwd.toLowerCase().includes(w))
+  };
+
+  ['len','upper','lower','num','sym','common'].forEach(k => {
+    const el = document.getElementById('tip-'+k);
+    if(checks[k]) el.classList.add('pass');
+    else el.classList.remove('pass');
+  });
+
+  const score = Object.values(checks).filter(Boolean).length;
+  let cls = '', label = '', color = '', crackTime = '';
+
+  if(score <= 1) { cls='active-weak'; label='CRITICAL WEAK'; color='var(--red)'; crackTime='< 1 second'; }
+  else if(score <= 2) { cls='active-weak'; label='VERY WEAK'; color='var(--red)'; crackTime='~ 1 minute'; }
+  else if(score <= 3) { cls='active-fair'; label='FAIR'; color='var(--yellow)'; crackTime='~ 1 day'; }
+  else if(score <= 4) { cls='active-good'; label='GOOD'; color='var(--cyan)'; crackTime='~ 1 year'; }
+  else if(score <= 5) { cls='active-strong'; label='STRONG'; color='var(--green)'; crackTime='~ 100 years'; }
+  else { cls='active-strong'; label='VERY STRONG'; color='var(--green)'; crackTime='~ 1 billion years'; }
+
+  const fill = Math.ceil(score * 5/6);
+  for(let i=0;i<fill;i++) document.getElementById(bars[i]).classList.add(cls);
+
+  document.getElementById('strengthText').textContent = label;
+  document.getElementById('strengthText').style.color = color;
+  document.getElementById('timeText').textContent = 'CRACK: ' + crackTime;
+}
+
+let pwdVisible = false;
+function togglePwd() {
+  const inp = document.getElementById('pwdInput');
+  pwdVisible = !pwdVisible;
+  inp.type = pwdVisible ? 'text' : 'password';
+}
+
+// ═══ ENCODE/DECODE ═══
+let encMethod = 'b64';
+['b64','r13','hex','bin'].forEach(m => {
+  document.getElementById('mb-'+m).addEventListener('click', () => {
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('mb-'+m).classList.add('active');
+    encMethod = m;
+  });
+});
+
+function encodeText() {
+  const input = document.getElementById('encInput').value;
+  let result = '';
+  try {
+    if(encMethod === 'b64') result = btoa(unescape(encodeURIComponent(input)));
+    else if(encMethod === 'r13') result = input.replace(/[A-Za-z]/g, c => String.fromCharCode(c.charCodeAt(0) + (c.toLowerCase() < 'n' ? 13 : -13)));
+    else if(encMethod === 'hex') result = Array.from(input).map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+    else if(encMethod === 'bin') result = Array.from(input).map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+  } catch(e) { result = 'Error: ' + e.message; }
+  document.getElementById('encOutput').value = result;
+}
+
+function decodeText() {
+  const input = document.getElementById('encInput').value;
+  let result = '';
+  try {
+    if(encMethod === 'b64') result = decodeURIComponent(escape(atob(input)));
+    else if(encMethod === 'r13') result = input.replace(/[A-Za-z]/g, c => String.fromCharCode(c.charCodeAt(0) + (c.toLowerCase() < 'n' ? 13 : -13)));
+    else if(encMethod === 'hex') result = input.trim().split(/\s+/).map(h => String.fromCharCode(parseInt(h,16))).join('');
+    else if(encMethod === 'bin') result = input.trim().split(/\s+/).map(b => String.fromCharCode(parseInt(b,2))).join('');
+  } catch(e) { result = 'Decode error — check input format'; }
+  document.getElementById('encOutput').value = result;
+}
+
+// ═══ CHECKLIST ═══
+const checkItems = [
+  { text: 'Enable Two-Factor Authentication', priority: 'CRITICAL', color: 'var(--red)' },
+  { text: 'Update all software to latest version', priority: 'HIGH', color: 'var(--orange)' },
+  { text: 'Configure firewall rules properly', priority: 'HIGH', color: 'var(--orange)' },
+  { text: 'Enable full-disk encryption', priority: 'MEDIUM', color: 'var(--yellow)' },
+  { text: 'Set up automated backups', priority: 'MEDIUM', color: 'var(--yellow)' },
+  { text: 'Review user access permissions', priority: 'HIGH', color: 'var(--orange)' },
+  { text: 'Install & configure antivirus/EDR', priority: 'CRITICAL', color: 'var(--red)' },
+];
+
+const checkList = document.getElementById('checklist');
+let doneCount = 0;
+
+checkItems.forEach((item, i) => {
+  const el = document.createElement('div');
+  el.className = 'check-item';
+  el.innerHTML = `
+    <div class="check-box" id="cb-${i}"></div>
+    <div class="check-label" style="font-size:0.85rem;flex:1">${item.text}</div>
+    <div class="check-priority" style="background:rgba(255,255,255,0.03);color:${item.color};border:1px solid ${item.color}40">${item.priority}</div>
+  `;
+  el.addEventListener('click', () => {
+    const isDone = el.classList.toggle('done');
+    document.getElementById('cb-'+i).textContent = isDone ? '✓' : '';
+    doneCount += isDone ? 1 : -1;
+    document.getElementById('checkScore').textContent = `${doneCount}/${checkItems.length} DONE`;
+    document.getElementById('checkScore').className = doneCount === checkItems.length ? 'card-badge badge-green' : 'card-badge badge-yellow';
+  });
+  checkList.appendChild(el);
+});
+</script>
+</body>
+</html>
